@@ -6,6 +6,7 @@ from pprint import pprint
 from textblob import TextBlob
 from nltk.corpus import stopwords
 import re
+import sys
 
 # constants
 consumer_key            = c.API_KEY
@@ -18,9 +19,9 @@ hashtag                 = "#InternetShutDown"
 
 # Data processing: Cleaning Tweet texts
 def clean_text(new_tweet):
-    ex_list = ['rt', 'http', 'RT']
+    ex_list = ['rt', 'http', 'RT', '#.*\S', '@.*:\S']
     exc = '|'.join(ex_list)
-    text = re.sub(exc, ' ' , new_tweet)
+    text = re.sub(exc, '' , new_tweet)
     text = text.lower()
     words = text.split()
     stopword_list = stopwords.words('english')
@@ -42,33 +43,37 @@ def main():
     api  = tweepy.API(auth)
     api = tweepy.API(auth, wait_on_rate_limit=True)
     # Get the User object for twitter...
-    tweet = api.search_tweets(q=hashtag,count=tweetsPerQry, result_type="recent",tweet_mode="extended")[0]
-    
+    maxId = -1
+    tweetCount = 0
+    meta_list = []
 
-    # available methods
-    print(dir(tweet))
-    # available variables
-    # print(vars(tweet))
+    if(maxId <= 0):
+        newtweets = api.search_tweets(q=hashtag,count=tweetsPerQry, result_type="recent",tweet_mode="extended")
+    else: 
+        newTweets = api.search(q=hashtag, count=tweetsPerQry, max_id=str(maxId - 1), result_type="recent", tweet_mode="extended")
 
-    # access tweet text
-    # print(tweet.text)
+    if not newTweets:
+        print("Done")
+        sys.exit(0)
+    for tweet in newtweets:
+        username = tweet.user.name
+        created_at = str(tweet.created_at)
 
-    # access user name
-    # print(dir(tweet.user))
-    # print(tweet.user.name)
-
-    username = tweet.user.name
-    created_at = str(tweet.created_at)
-    tweet_text = tweet.full_text
-    tweet_text_sent = tweet.full_text
-    retweet_count = tweet.retweet_count
-    fav_count = tweet.favorite_count
-    media_source = tweet.source
-    tweet_text_sent = clean_text(tweet_text_sent)
-    pprint(tweet_text_sent)
-    print(retweet_count)
-    print(media_source)
-main()
+        try:
+            tweet_text = tweet.retweeted_status.full_text
+        except AttributeError:  # Not a Retweet
+            tweet_text = tweet.full_text
+        tweet_text = tweet.retweeted_status.full_text
+        tweet_text_sent = tweet_text
+        retweet_count = tweet.retweet_count
+        fav_count = tweet.favorite_count
+        media_source = tweet.source
+        tweet_text_sent = clean_text(tweet_text_sent)
+        print(tweet_text)
+        pprint(tweet_text_sent)
+        print(retweet_count)
+        print(media_source)
+# main()
 
 
 
