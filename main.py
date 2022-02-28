@@ -1,3 +1,4 @@
+
 import key as c
 import tweepy
 import sqlalchemy 
@@ -6,18 +7,25 @@ from textblob import TextBlob
 from nltk.corpus import stopwords
 import re
 
+from sqlalchemy import create_engine
+from sqlalchemy import insert
+from sqlalchemy import MetaData
+from sqlalchemy import Table
+from sqlalchemy.dialects.postgresql import insert
+
+
 # constants
 consumer_key            = c.API_KEY
 consumer_secret         = c.API_KEy_SECRET
 access_token            = c.Access_token
 access_token_secret     = c.Access_token_secret
 tweetsPerQry            = 100
-maxTweets               = 100
-hashtag                 = "#InternetShutDown"
+maxTweets               = 1000
+hashtag                 = c.hashtag
 
 # Data processing: Cleaning Tweet texts
 def clean_text(new_tweet):
-    ex_list = ['rt', 'http', 'RT', '#.*\S', '@.*:\S']
+    ex_list = ['rt', 'http[^\s]*', 'RT', '#[^\s]*\S', '@[^\s]*:\S']
     exc = '|'.join(ex_list)
     text = re.sub(exc, '' , new_tweet)
     text = text.lower()
@@ -37,10 +45,13 @@ def sentiment_score(new_tweet):
     else:
         return -1  #negative
 
+def get_engine():
+    pass
 
 def main():
     """
     This function first query twitter to download data
+    Then insert results into a postgreSQL local server
     """
     # Authenticate to Twitter
     auth = tweepy.OAuth1UserHandler(consumer_key, consumer_secret, access_token, access_token_secret)
@@ -93,21 +104,39 @@ def main():
             data_dict = {
             "username":username,
             "created_at":created_at,
-            "tweet_text":tweet_text,
+            "tweet_text":tweet_text_sent,
             "retweet_count":retweet_count,
             "fav_count":fav_count,
             "media_source":media_source,
             "sentiment_score":result_score
             }
-            print(data_dict["sentiment_score"])
+            # print(data_dict["sentiment_score"])
             meta_list.append(data_dict)
         # end for
         tweetCount += len(newTweets)
         maxId = newTweets[-1].id
-    
 
+    engine = create_engine(c.postgre_url)
+    conn = engine.connect()
+    metadata = MetaData()
+    print("printing meta data ...")
+    
+   
+    # reflect db schema to MetaData
+    trans = conn.begin()
+    metadata.reflect(bind=engine,schema=c._schema)
+    print(metadata.tables)
+    
+    table_name = metadata.tables[c.table_name]
+
+    insert_stmt = insert(table_name)
+    #if you have constraint in your database, and you just want to update unique record
+    # do_nothing_stmt = insert_stmt.on_conflict_do_nothing(constraint='')
+    result_proxy = conn.execute(insert_stmt, meta_list)
+    trans.commit() 
+    conn.close()
+
+# print(clean_text("#ukrain is hoding againse #nuclear fd"))
 main()
 
 
-
-# %%
