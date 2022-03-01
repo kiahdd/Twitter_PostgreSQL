@@ -13,5 +13,9 @@
 * [Tweepy API documentation and functions](https://docs.tweepy.org/en/stable/api.html)
 * [Similar project](https://medium.com/analytics-vidhya/how-i-built-a-twitter-dashboard-4d5d0e53c36c)
 * [PostgreSQL Tutorial in 3 days](https://www.guru99.com/postgresql-tutorial.html)
+* [sqlalchemy documentation](https://docs.sqlalchemy.org/en/14/core/engines.html)
+* [Youtube Tutorial for SQLAlchemy](https://www.youtube.com/watch?v=dfyB_ZVQ2jE)
+
+
 
 
